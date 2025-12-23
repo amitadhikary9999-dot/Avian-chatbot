@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,7 +21,7 @@
         .btn-send { background: #22c55e; color: #000; }
         .btn-image { background: #a855f7; color: #fff; }
         .btn-voice { background: #f59e0b; color: #fff; }
-        audio { height: 30px; margin-top: 10px; width: 100%; }
+        audio { height: 35px; margin-top: 10px; width: 100%; }
     </style>
 </head>
 <body>
@@ -35,16 +36,18 @@
         <button class="btn-send" onclick="handleAction('chat')">Send</button>
     </div>
     <div class="btn-group">
-        <button class="btn-image" onclick="handleAction('image')">🎨 Generate Image</button>
-        <button class="btn-voice" onclick="handleAction('voice')">🔊 Generate Voice</button>
+        <button class="btn-image" onclick="handleAction('image')">🎨 Image</button>
+        <button class="btn-voice" onclick="handleAction('voice')">🔊 Voice</button>
     </div>
 </footer>
 
 <script>
-    // গুরুত্বপূর্ণ: আপনার অরিজিনাল API Key গুলো এখানে বসান
-    const GEMINI_API_KEY = "YOUR_GEMINI_KEY"; 
+    // আপনার স্ক্রিনশট থেকে নেওয়া আসল API Key এখানে বসিয়ে দিয়েছি
+    const GEMINI_API_KEY = "AIzaSyDuxVMiEyrcs7Ns-st0EZZiZD6ex3En9H0"; 
+    
+    // ElevenLabs এর জন্য আপনার নিজের Key এখানে বসাতে হবে (যদি থাকে)
     const ELEVENLABS_API_KEY = "YOUR_ELEVENLABS_KEY"; 
-    const VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // ElevenLabs-এর একটি ডিফল্ট ভয়েস আইডি
+    const VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; 
 
     const chatDiv = document.getElementById("chat");
     const input = document.getElementById("input");
@@ -72,7 +75,7 @@
 
         addMessage(text, "user");
         input.value = "";
-        const loadingMsg = addMessage("Processing...", "bot");
+        const loadingMsg = addMessage("Thinking...", "bot");
 
         try {
             if (type === 'chat') {
@@ -80,12 +83,15 @@
                 loadingMsg.textContent = response;
             } 
             else if (type === 'image') {
-                // নোট: Gemini সরাসরি ইমেজ জেনারেট করে না, এখানে আপনি DALL-E বা Pollinations (Free) ব্যবহার করতে পারেন
-                const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(text)}?width=1024&height=1024&seed=42`;
+                const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(text)}?width=1024&height=1024&seed=${Math.floor(Math.random() * 1000)}`;
                 loadingMsg.remove();
                 addMessage(imageUrl, "bot", "image");
             } 
             else if (type === 'voice') {
+                if(ELEVENLABS_API_KEY === "YOUR_ELEVENLABS_KEY") {
+                    loadingMsg.textContent = "Error: Please add ElevenLabs API Key in the code.";
+                    return;
+                }
                 const audioUrl = await fetchElevenLabs(text);
                 loadingMsg.remove();
                 addMessage(audioUrl, "bot", "audio");
@@ -102,6 +108,8 @@
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
         const data = await res.json();
+        
+        if (data.error) return "Error: " + data.error.message;
         return data.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
     }
 
@@ -118,6 +126,7 @@
                 voice_settings: { stability: 0.5, similarity_boost: 0.5 }
             })
         });
+        if (!res.ok) throw new Error("ElevenLabs API failed");
         const blob = await res.blob();
         return URL.createObjectURL(blob);
     }
