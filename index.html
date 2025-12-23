@@ -1,5 +1,4 @@
-        
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -42,7 +41,7 @@
 </footer>
 
 <script>
-    // আপনার স্ক্রিনশট থেকে নেওয়া API Key
+    // আপনার স্ক্রিনশট থেকে নেওয়া আসল API Key
     const GEMINI_API_KEY = "AIzaSyDuxVMiEyrcs7Ns-st0EZZiZD6ex3En9H0"; 
     
     // ElevenLabs API Key না থাকলে ভয়েস কাজ করবে না
@@ -102,8 +101,8 @@
     }
 
     async function fetchGemini(prompt) {
-        // নতুন মডেল নাম 'gemini-1.5-flash' এর পরিবর্তে 'gemini-pro' চেষ্টা করুন অথবা ভার্সন পরিবর্তন করুন
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+        // এপিআই ইউআরএল আপডেট করা হয়েছে: v1 ব্যবহার করা হয়েছে এবং মডেল gemini-1.5-flash
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
         const res = await fetch(url, {
             method: "POST",
@@ -139,3 +138,5 @@
 
 </body>
 </html>
+   
+
