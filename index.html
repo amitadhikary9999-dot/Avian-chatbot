@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini AI Multi-Tool</title>
+    <style>
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #fff; display: flex; flex-direction: column; height: 100vh; }
+        header { background: #020617; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; border-bottom: 1px solid #1e293b; }
+        #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; }
+        .message { max-width: 80%; margin-bottom: 12px; padding: 12px 16px; border-radius: 15px; line-height: 1.5; position: relative; }
+        .user { background: #2563eb; align-self: flex-end; }
+        .bot { background: #1e293b; align-self: flex-start; border: 1px solid #334155; }
+        .bot img { max-width: 100%; border-radius: 10px; margin-top: 10px; }
+        footer { display: flex; flex-direction: column; padding: 10px; background: #020617; gap: 10px; }
+        .input-area { display: flex; gap: 8px; }
+        input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: white; outline: none; }
+        .btn-group { display: flex; gap: 5px; justify-content: center; }
+        button { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-send { background: #22c55e; color: #000; }
+        .btn-image { background: #a855f7; color: #fff; }
+        .btn-voice { background: #f59e0b; color: #fff; }
+        audio { height: 30px; margin-top: 10px; width: 100%; }
+    </style>
+</head>
+<body>
+
+<header>Gemini AI Power Hub</header>
+
+<div id="chat"></div>
+
+<footer>
+    <div class="input-area">
+        <input id="input" placeholder="এখানে লিখুন (Text, Image Prompt, or Voice)..." />
+        <button class="btn-send" onclick="handleAction('chat')">Send</button>
+    </div>
+    <div class="btn-group">
+        <button class="btn-image" onclick="handleAction('image')">🎨 Generate Image</button>
+        <button class="btn-voice" onclick="handleAction('voice')">🔊 Generate Voice</button>
+    </div>
+</footer>
+
+<script>
+    // গুরুত্বপূর্ণ: আপনার অরিজিনাল API Key গুলো এখানে বসান
+    const GEMINI_API_KEY = "YOUR_GEMINI_KEY"; 
+    const ELEVENLABS_API_KEY = "YOUR_ELEVENLABS_KEY"; 
+    const VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // ElevenLabs-এর একটি ডিফল্ট ভয়েস আইডি
+
+    const chatDiv = document.getElementById("chat");
+    const input = document.getElementById("input");
+
+    function addMessage(content, sender, type = "text") {
+        const div = document.createElement("div");
+        div.className = "message " + sender;
+        
+        if (type === "text") {
+            div.textContent = content;
+        } else if (type === "image") {
+            div.innerHTML = `<div>Generated Image:</div><img src="${content}" alt="AI Image">`;
+        } else if (type === "audio") {
+            div.innerHTML = `<div>Voice Generated:</div><audio controls src="${content}"></audio>`;
+        }
+        
+        chatDiv.appendChild(div);
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+        return div;
+    }
+
+    async function handleAction(type) {
+        const text = input.value.trim();
+        if (!text) return;
+
+        addMessage(text, "user");
+        input.value = "";
+        const loadingMsg = addMessage("Processing...", "bot");
+
+        try {
+            if (type === 'chat') {
+                const response = await fetchGemini(text);
+                loadingMsg.textContent = response;
+            } 
+            else if (type === 'image') {
+                // নোট: Gemini সরাসরি ইমেজ জেনারেট করে না, এখানে আপনি DALL-E বা Pollinations (Free) ব্যবহার করতে পারেন
+                const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(text)}?width=1024&height=1024&seed=42`;
+                loadingMsg.remove();
+                addMessage(imageUrl, "bot", "image");
+            } 
+            else if (type === 'voice') {
+                const audioUrl = await fetchElevenLabs(text);
+                loadingMsg.remove();
+                addMessage(audioUrl, "bot", "audio");
+            }
+        } catch (err) {
+            loadingMsg.textContent = "Error: " + err.message;
+        }
+    }
+
+    async function fetchGemini(prompt) {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const data = await res.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
+    }
+
+    async function fetchElevenLabs(prompt) {
+        const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
+            method: "POST",
+            headers: {
+                "xi-api-key": ELEVENLABS_API_KEY,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                text: prompt,
+                model_id: "eleven_monolingual_v1",
+                voice_settings: { stability: 0.5, similarity_boost: 0.5 }
+            })
+        });
+        const blob = await res.blob();
+        return URL.createObjectURL(blob);
+    }
+
+    input.addEventListener("keydown", e => { if (e.key === "Enter") handleAction('chat'); });
+</script>
+
+</body>
+</html>
